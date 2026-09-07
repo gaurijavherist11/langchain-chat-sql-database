@@ -131,8 +131,25 @@ else:
 # GROQ API KEY
 # --------------------------------------------------
 
-# Get Groq API key from the .env file
-api_key = os.getenv("GROQ_API_KEY")
+# Get Groq API key from the sidebar
+api_key = st.sidebar.text_input(
+    label="Groq API key",
+    type="password"
+)
+
+# If no key is entered in the sidebar,
+# use the key from the .env file
+if not api_key:
+    api_key = os.getenv("GROQ_API_KEY")
+
+# Remove accidental spaces from the API key
+if api_key:
+    api_key = api_key.strip()
+
+    # Groq API key should contain only ASCII characters
+    if not api_key.isascii():
+        st.error("Please enter a valid Groq API key.")
+        st.stop()
 
 
 # --------------------------------------------------
@@ -149,9 +166,9 @@ if not db_uri:
 # GROQ API KEY VALIDATION
 # --------------------------------------------------
 
-# Check if Groq API key is available in .env
+# Check if Groq API key is available
 if not api_key:
-    st.info("Please add the GROQ_API_KEY to the .env file")
+    st.info("Please add the Groq API key")
 
 
 # --------------------------------------------------
@@ -356,6 +373,27 @@ use_query = st.chat_input(
 
 if use_query:
 
+    # --------------------------------------------------
+    # HANDLE GENERIC "THE TABLE" QUERY
+    # --------------------------------------------------
+
+    # Get the tables available in the selected database
+    available_tables = db.get_usable_table_names()
+
+    # If there is only one available table and the user
+    # says "the table", automatically identify that table
+    if (
+        len(available_tables) == 1
+        and "the table" in use_query.lower()
+    ):
+        use_query = (
+            f"{use_query}. "
+            f"The available table is "
+            f"{available_tables[0]}. "
+            f"Use this table."
+        )
+
+
     # Add user question to chat history
     st.session_state.messages.append(
         {
@@ -379,7 +417,7 @@ if use_query:
         if agent is None:
 
             response_text = (
-                "Please add the GROQ_API_KEY to the .env file first."
+                "Please add the Groq API key first."
             )
 
             st.write(response_text)
